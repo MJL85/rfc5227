@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
 			"-l\tListen mode. Listen for ARP probes and attack the source host.\n"
 			"-t\tTarget mode. Send ARP probes to the host at this IP address.\n"
 			"-S\tStealth. Use the target's MAC as our source MAC.\n"
-			"-m\t(Target mode only) Specify the MAC address of the target host.i (fmt: \\xAA\\xBB\\xCC\\xDD\\xEE\\xFF)\n"
+			"-m\t(Target mode only) Specify the MAC address of the target host. (fmt: AA:BB:CC:DD:EE:FF)\n"
 			"-c\t(Target mode only) Continuously attack the target as opposed to just once.\n"
 			"-d\t(Target mode only) Delay attacks by msec microseconds.\n"
 			"-p\t(Listen mode only) Probability of attacking when sniffed an ARP probe. (0.0 <= x <= 1.0) (Default 1.0)\n",
