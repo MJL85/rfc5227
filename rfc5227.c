@@ -161,6 +161,7 @@ int main(int argc, char** argv) {
 			"       Mode: %s\n"
 			"  Target IP: %s\n"
 			" Target MAC: %s\n"
+			" Source MAC: %s\n"
 			"    Stealth: %s\n"
 			"      Delay: %s microseconds\n"
 			" Continuous: %s\n"
@@ -168,6 +169,7 @@ int main(int argc, char** argv) {
 			IS_SET(FLAG_LISTEN) ? "Passive" : "Target",
 			target_ip,
 			target_mac,
+			source_mac,
 			IS_SET(FLAG_STEALTH) ? "yes" : "no",
 			attack_delay,
 			IS_SET(FLAG_CONT) ? "yes" : "no",
