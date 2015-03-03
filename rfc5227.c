@@ -42,6 +42,8 @@
  * to demonstrate an existing vulenerability introduced by the above RFC.
  * As a solution it is recommended to disable the IP address conflict
  * detection mechanism within Windows.
+ *
+ * This code is intended for educational purposes only.
  */
 
 #include <stdio.h>
