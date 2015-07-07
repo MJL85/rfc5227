@@ -93,8 +93,8 @@ Cisco IOS with the IPDT feature enabled could cause similar IP DoS issues.  Cisc
 
 * [Command line showing a listening attack.](http://i.imgur.com/7Ux5pY9.jpg)  
 The program listens for all ARP probes and automatically DoS's the host sending them.  
-The program receives an ARP probe from 00:0c:29:de:45:e8 indicating the host is turning up a NIC to use IP 192.168.100.23.  
-The program sends a unicast ARP probe back to 00:0c:29:de:45:e8 saying that it is doing the same thing.  
+The program receives an ARP probe from `00:0c:29:de:45:e8` indicating the host is turning up a NIC to use IP 192.168.100.23.  
+The program sends a unicast ARP probe back to `00:0c:29:de:45:e8` saying that it is doing the same thing.  
   
 &nbsp;
   
