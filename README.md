@@ -91,25 +91,25 @@ Cisco IOS with the IPDT feature enabled could cause similar IP DoS issues.  Cisc
   
 **Screenshots**  
 
-* [Command line showing a listening attack.](http://i.imgur.com/7Ux5pY9.jpg)  
+![Command line showing a listening attack.](https://github.com/MJL85/rfc5227/blob/master/Demo1.jpg)  
 The program listens for all ARP probes and automatically DoS's the host sending them.  
 The program receives an ARP probe from `00:0c:29:de:45:e8` indicating the host is turning up a NIC to use IP 192.168.100.23.  
 The program sends a unicast ARP probe back to `00:0c:29:de:45:e8` saying that it is doing the same thing.  
   
 &nbsp;
   
-* [Windows Server 2008 R2 (the target from above).](http://i.imgur.com/TK8Inbx.jpg)  
+![Windows Server 2008 R2 (the target from above).](https://github.com/MJL85/rfc5227/blob/master/Demo2.jpg)  
 Shows the server was configured with a static IP address of 192.168.100.23 and detected a duplicate IP on the network.  
 As a result it assigned itself 169.254.171.12.
   
 &nbsp;
   
-* [Windows Server 2008 R2 (the target from above again).](http://i.imgur.com/EVN5QVq.jpg)  
+![Windows Server 2008 R2 (the target from above again).](https://github.com/MJL85/rfc5227/blob/master/Demo3.jpg)  
 The program continued to deny the server IP addresses, even denying 196.254.x.x/16 addresses, and it eventually removed everything except for the gateway from the interface.
   
 &nbsp;
   
-* [Packet capture on host during attack.](http://i.imgur.com/63eD3sE.jpg)  
+![Packet capture on host during attack.](https://github.com/MJL85/rfc5227/blob/master/Demo4.jpg)  
 Wireshark running on the target host showing ARP activity.
   
 &nbsp;
